@@ -43,6 +43,7 @@ from ...utils import (
     replace_return_docstrings,
 )
 from .configuration_reformer import ReformerConfig
+import pdb
 
 
 logger = logging.get_logger(__name__)
@@ -1316,16 +1317,22 @@ class ReformerAttention(nn.Module):
             past_buckets_states_layer = None
 
         # use cached buckets for backprob if buckets not None for LSHSelfAttention
-        self_attention_outputs = self.self_attention(
-            hidden_states=hidden_states,
-            head_mask=head_mask,
-            attention_mask=attention_mask,
-            num_hashes=num_hashes,
-            past_buckets_states=past_buckets_states_layer,
-            use_cache=use_cache,
-            output_attentions=output_attentions,
-            buckets=buckets,
-        )
+        #pdb.set_trace()
+        try:
+            self_attention_outputs = self.self_attention.forward(
+                hidden_states=hidden_states,
+                head_mask=head_mask,
+                attention_mask=attention_mask,
+                num_hashes=num_hashes,
+                past_buckets_states=past_buckets_states_layer,
+                use_cache=use_cache,
+                output_attentions=output_attentions,
+                buckets=buckets,
+            )
+            #print("ran try fine")
+        except TypeError as exc:
+            print(exc)
+            pdb.set_trace()
 
         # add buckets if necessary
         if hasattr(self_attention_outputs, "buckets"):
@@ -1483,7 +1490,7 @@ class ReformerLayer(nn.Module):
             if self.training:
                 self._init_attention_seed()
 
-            attn_outputs = self.attention(
+            attn_outputs = self.attention.forward(
                 hidden_states=hidden_states,
                 head_mask=head_mask,
                 attention_mask=attention_mask,
@@ -1561,7 +1568,7 @@ class ReformerLayer(nn.Module):
             torch.manual_seed(self.attention_seed)
             # f(X_2)
             # use cached buckets for backprob if buckets not None for LSHSelfAttention
-            output = self.attention(
+            output = self.attention.forward(
                 hidden_states=hidden_states,
                 head_mask=head_mask,
                 attention_mask=attention_mask,
@@ -1618,7 +1625,7 @@ class _ReversibleFunction(Function):
             if output_hidden_states is True:
                 all_hidden_states.append(hidden_states)
 
-            layer_outputs = layer(
+            layer_outputs = layer.forward(
                 prev_attn_output=attn_output,
                 hidden_states=hidden_states,
                 attention_mask=attention_mask,
@@ -2104,7 +2111,7 @@ class ReformerModel(ReformerPreTrainedModel):
             start_idx_pos_encodings=start_idx_pos_encodings,
         )
 
-        encoder_outputs = self.encoder(
+        encoder_outputs = self.encoder.forward(
             hidden_states=embedding_output,
             head_mask=head_mask,
             attention_mask=attention_mask,
