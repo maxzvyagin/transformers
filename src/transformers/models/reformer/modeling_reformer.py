@@ -146,12 +146,16 @@ class AxialPositionEmbeddings(nn.Module):
 
     def forward(self, position_ids):
         # broadcast weights to correct shape
+        #pdb.set_trace()
         batch_size = position_ids.shape[0]
         sequence_length = position_ids.shape[1]
 
-        broadcasted_weights = [
-            weight.expand((batch_size,) + self.axial_pos_shape + weight.shape[-1:]) for weight in self.weights
-        ]
+        #broadcasted_weights = [
+        #    weight.expand((batch_size,) + self.axial_pos_shape + weight.shape[-1:]) for weight in self.weights
+        #]
+        broadcast_one = self.weights[0].expand((batch_size,) + self.axial_pos_shape + self.weights[0].shape[-1:])
+        broadcast_two = self.weights[1].expand((batch_size,) + self.axial_pos_shape + self.weights[1].shape[-1:])
+        broadcasted_weights = [broadcast_one, broadcast_two]
 
         if self.training is True:
             if reduce(mul, self.axial_pos_shape) != sequence_length:
@@ -265,6 +269,7 @@ class ReformerEmbeddings(nn.Module):
         embeddings = nn.functional.dropout(inputs_embeds, p=self.dropout, training=self.training)
 
         # add positional embeddings
+        #pdb.set_trace()
         position_embeddings = self.position_embeddings(position_ids)
         embeddings = embeddings + position_embeddings
         return embeddings
@@ -403,6 +408,7 @@ class LSHSelfAttention(nn.Module, EfficientAttentionMixin):
                     past_states=past_states,
                     past_buckets=past_buckets,
                 )
+                #pdb.set_trace()
 
                 query_key_vectors = self._query_per_attn_head(key_value_hidden_states)
                 value_vectors = self._value_per_attn_head(key_value_hidden_states)
@@ -596,17 +602,26 @@ class LSHSelfAttention(nn.Module, EfficientAttentionMixin):
         return LSHSelfAttentionOutput(hidden_states=out_vectors, attention_probs=attention_probs, buckets=buckets)
 
     def _query_per_attn_head(self, hidden_states):
-        per_head_query_key = self.query_key.weight.reshape(
-            self.num_attention_heads, self.attention_head_size, self.hidden_size
-        ).transpose(-2, -1)
+        try:
+            per_head_query_key = self.query_key.weight.reshape(
+                self.num_attention_heads, self.attention_head_size, self.hidden_size
+            ).transpose(-2, -1)
+        except:
+            # deepspeed integration
+            weight = self.query_key.weight.ds_tensor
+            per_head_query_key = weight.reshape(self.num_attention_heads, self.attention_head_size, self.hidden_size).transpose(-2, -1)
         # only relevant for inference and no bias => we can use einsum here
         query_key_vectors = torch.einsum("balh,ahr->balr", hidden_states, per_head_query_key)
         return query_key_vectors
 
     def _value_per_attn_head(self, hidden_states):
-        per_head_value = self.value.weight.reshape(
-            self.num_attention_heads, self.attention_head_size, self.hidden_size
-        ).transpose(-2, -1)
+        try:
+            per_head_value = self.value.weight.reshape(
+                self.num_attention_heads, self.attention_head_size, self.hidden_size
+            ).transpose(-2, -1)
+        except:
+            weight = self.value.weight.ds_tensor
+            per_head_value = weight.reshape(self.num_attention_heads, self.attention_head_size, self.hidden_size).transpose(-2, -1)
         # only relevant for inference and no bias => we can use einsum here
         value_vectors = torch.einsum("balh,ahr->balr", hidden_states, per_head_value)
         return value_vectors
