@@ -661,6 +661,10 @@ class LSHSelfAttention(nn.Module, EfficientAttentionMixin):
         # Output dim: Batch_Size x Num_Attn_Heads x Num_Hashes x Seq_Len x Num_Buckets/2
         rotated_vectors = torch.einsum("bmtd,mdhr->bmhtr", vectors, random_rotations)
 
+        # inference edit - check if bucket is set
+        if self.num_buckets is None:
+            self._set_num_buckets(self.config.max_position_embeddings)
+
         if isinstance(self.num_buckets, int) or len(self.num_buckets) == 1:
             rotated_vectors = torch.cat([rotated_vectors, -rotated_vectors], dim=-1)
             buckets = torch.argmax(rotated_vectors, dim=-1)
