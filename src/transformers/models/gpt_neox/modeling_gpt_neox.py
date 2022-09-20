@@ -31,6 +31,8 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import logging
 from .configuration_gpt_neox import GPTNeoXConfig
 
+import deepspeed
+
 
 logger = logging.get_logger(__name__)
 
@@ -288,7 +290,8 @@ class GPTNeoXLayer(nn.Module):
     ):
         residual = hidden_states
         ln_out = self.input_layernorm(hidden_states)
-        attention_layer_outputs = self.attention(
+        # Use the DeepSpeed checkpointing function instead of calling the module directly
+        attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention,
             ln_out,
             attention_mask=attention_mask,
             layer_past=layer_past,
