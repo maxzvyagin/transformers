@@ -33,7 +33,6 @@ from .configuration_gpt_neox import GPTNeoXConfig
 
 import deepspeed
 
-
 logger = logging.get_logger(__name__)
 
 _CHECKPOINT_FOR_DOC = "gpt-neox-20b"
