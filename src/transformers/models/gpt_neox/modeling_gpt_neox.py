@@ -277,6 +277,7 @@ class GPTNeoXLayer(nn.Module):
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.attention = GPTNeoXAttention(config)
         self.mlp = GPTNeoXMLP(config)
+        self.use_deepspeed_checkpointing = config.use_deep_speed_checkpointing
 
     def forward(
         self,
