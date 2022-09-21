@@ -17,7 +17,6 @@
 from ...configuration_utils import PretrainedConfig
 from ...utils import logging
 
-
 logger = logging.get_logger(__name__)
 
 GPT_NEOX_PRETRAINED_CONFIG_ARCHIVE_MAP = {
@@ -87,25 +86,26 @@ class GPTNeoXConfig(PretrainedConfig):
     model_type = "gpt_neox"
 
     def __init__(
-        self,
-        vocab_size=50432,
-        hidden_size=6144,
-        num_hidden_layers=44,
-        num_attention_heads=64,
-        intermediate_size=24576,
-        hidden_act="gelu",
-        hidden_dropout_prob=0.1,
-        attention_probs_dropout_prob=0.1,
-        rotary_pct=0.25,
-        rotary_emb_base=10000,
-        max_position_embeddings=2048,
-        initializer_range=0.02,
-        layer_norm_eps=1e-5,
-        use_cache=True,
-        bos_token_id=0,
-        eos_token_id=2,
-        tie_word_embeddings=False,
-        **kwargs
+            self,
+            vocab_size=50432,
+            hidden_size=6144,
+            num_hidden_layers=44,
+            num_attention_heads=64,
+            intermediate_size=24576,
+            hidden_act="gelu",
+            hidden_dropout_prob=0.1,
+            attention_probs_dropout_prob=0.1,
+            rotary_pct=0.25,
+            rotary_emb_base=10000,
+            max_position_embeddings=2048,
+            initializer_range=0.02,
+            layer_norm_eps=1e-5,
+            use_cache=True,
+            bos_token_id=0,
+            eos_token_id=2,
+            tie_word_embeddings=False,
+            use_deepspeed_checkpointing=False,
+            **kwargs
     ):
         super().__init__(bos_token_id=bos_token_id, eos_token_id=eos_token_id, **kwargs)
         self.vocab_size = vocab_size
@@ -123,3 +123,4 @@ class GPTNeoXConfig(PretrainedConfig):
         self.layer_norm_eps = layer_norm_eps
         self.use_cache = use_cache
         self.tie_word_embeddings = tie_word_embeddings
+        self.use_deepspeed_checkpointing = use_deepspeed_checkpointing
