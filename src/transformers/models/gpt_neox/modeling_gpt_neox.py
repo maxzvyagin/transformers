@@ -277,7 +277,7 @@ class GPTNeoXLayer(nn.Module):
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.attention = GPTNeoXAttention(config)
         self.mlp = GPTNeoXMLP(config)
-        self.use_deepspeed_checkpointing = config.use_deep_speed_checkpointing
+        self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 
     def forward(
         self,
@@ -291,19 +291,19 @@ class GPTNeoXLayer(nn.Module):
         residual = hidden_states
         ln_out = self.input_layernorm(hidden_states)
         # Use the DeepSpeed checkpointing function instead of calling the module directly
-        # if self.use_deepspeed_checkpointing:
-        attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
+        if self.use_deepspeed_checkpointing:
+            attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
                                                                      head_mask,
                                                                      layer_past, use_cache, output_attentions)
-        # else:
-        #     attention_layer_outputs = self.attention(
-        #         ln_out,
-        #         attention_mask=attention_mask,
-        #         layer_past=layer_past,
-        #         head_mask=head_mask,
-        #         use_cache=use_cache,
-        #         output_attentions=output_attentions,
-        #     )
+        else:
+            attention_layer_outputs = self.attention(
+                ln_out,
+                attention_mask=attention_mask,
+                layer_past=layer_past,
+                head_mask=head_mask,
+                use_cache=use_cache,
+                output_attentions=output_attentions,
+            )
 
         attn_output = attention_layer_outputs[0]  # output_attn: a, present, (attentions)
         outputs = attention_layer_outputs[1:]
