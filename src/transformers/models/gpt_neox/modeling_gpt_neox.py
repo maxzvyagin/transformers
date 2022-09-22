@@ -95,7 +95,7 @@ class GPTNeoXAttention(nn.Module):
         self.query_key_value = nn.Linear(config.hidden_size, 3 * config.hidden_size)
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
 
-        self.use_deepspeed_checkpointing = config.use_deep_speed_checkpointing
+        self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 
     def forward(
         self,
@@ -111,7 +111,7 @@ class GPTNeoXAttention(nn.Module):
         # Compute QKV
         # Attention heads [batch, seq_len, hidden_size]
         #   --> [batch, seq_len, (np * 3 * head_size)]
-        if self.use_deep_speed_checkpointing:
+        if self.use_deepspeed_checkpointing:
             qkv = deepspeed.checkpointing.checkpoint(self.query_key_value, hidden_states)
         else:
             qkv = self.query_key_value(hidden_states)
