@@ -95,6 +95,8 @@ class GPTNeoXAttention(nn.Module):
         self.query_key_value = nn.Linear(config.hidden_size, 3 * config.hidden_size)
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
 
+        self.use_deepspeed_checkpointing = config.use_deep_speed_checkpointing
+
     def forward(
         self,
         hidden_states,
@@ -109,7 +111,10 @@ class GPTNeoXAttention(nn.Module):
         # Compute QKV
         # Attention heads [batch, seq_len, hidden_size]
         #   --> [batch, seq_len, (np * 3 * head_size)]
-        qkv = self.query_key_value(hidden_states)
+        if self.use_deep_speed_checkpointing:
+            qkv = deepspeed.checkpointing.checkpoint(self.query_key_value, hidden_states)
+        else:
+            qkv = self.query_key_value(hidden_states)
 
         # [batch, seq_len, (num_heads * 3 * head_size)]
         #   --> [batch, seq_len, num_heads, 3 * head_size]
@@ -291,19 +296,19 @@ class GPTNeoXLayer(nn.Module):
         residual = hidden_states
         ln_out = self.input_layernorm(hidden_states)
         # Use the DeepSpeed checkpointing function instead of calling the module directly
-        if self.use_deepspeed_checkpointing:
-            attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
-                                                                     head_mask,
-                                                                     layer_past, use_cache, output_attentions)
-        else:
-            attention_layer_outputs = self.attention(
-                ln_out,
-                attention_mask=attention_mask,
-                layer_past=layer_past,
-                head_mask=head_mask,
-                use_cache=use_cache,
-                output_attentions=output_attentions,
-            )
+        # if self.use_deepspeed_checkpointing:
+        #     attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
+        #                                                              head_mask,
+        #                                                              layer_past, use_cache, output_attentions)
+        # else:
+        attention_layer_outputs = self.attention(
+            ln_out,
+            attention_mask=attention_mask,
+            layer_past=layer_past,
+            head_mask=head_mask,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+        )
 
         attn_output = attention_layer_outputs[0]  # output_attn: a, present, (attentions)
         outputs = attention_layer_outputs[1:]
