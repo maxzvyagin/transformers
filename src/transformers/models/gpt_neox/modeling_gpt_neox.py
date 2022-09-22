@@ -156,7 +156,10 @@ class GPTNeoXAttention(nn.Module):
 
         # Reshape outputs
         attn_output = self._merge_heads(attn_output, self.num_attention_heads, self.head_size)
-        attn_output = self.dense(attn_output)
+        if self.use_deepspeed_checkpointing:
+            attn_output = deepspeed.checkpointing.checkpoint(self.dense, attn_output)
+        else:
+            attn_output = self.dense(attn_output)
 
         outputs = (attn_output, present)
         if output_attentions:
