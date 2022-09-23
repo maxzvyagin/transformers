@@ -300,9 +300,9 @@ class GPTNeoXLayer(nn.Module):
         ln_out = self.input_layernorm(hidden_states)
         # Use the DeepSpeed checkpointing function instead of calling the module directly
         if self.use_deepspeed_checkpointing:
-            attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
+            attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, [ln_out, attention_mask,
                                                                      head_mask,
-                                                                     layer_past, use_cache, output_attentions)
+                                                                     layer_past, use_cache, output_attentions])
         else:
             attention_layer_outputs = self.attention(
                 ln_out,
