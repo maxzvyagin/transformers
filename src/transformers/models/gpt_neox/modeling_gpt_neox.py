@@ -95,6 +95,8 @@ class GPTNeoXAttention(nn.Module):
         self.query_key_value = nn.Linear(config.hidden_size, 3 * config.hidden_size)
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
 
+        self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
+
     def forward(
         self,
         hidden_states,
@@ -109,6 +111,9 @@ class GPTNeoXAttention(nn.Module):
         # Compute QKV
         # Attention heads [batch, seq_len, hidden_size]
         #   --> [batch, seq_len, (np * 3 * head_size)]
+        # if self.use_deepspeed_checkpointing:
+        #     qkv = deepspeed.checkpointing.checkpoint(self.query_key_value, hidden_states)
+        # else:
         qkv = self.query_key_value(hidden_states)
 
         # [batch, seq_len, (num_heads * 3 * head_size)]
@@ -151,6 +156,9 @@ class GPTNeoXAttention(nn.Module):
 
         # Reshape outputs
         attn_output = self._merge_heads(attn_output, self.num_attention_heads, self.head_size)
+        # if self.use_deepspeed_checkpointing:
+        #     attn_output = deepspeed.checkpointing.checkpoint(self.dense, attn_output)
+        # else:
         attn_output = self.dense(attn_output)
 
         outputs = (attn_output, present)
@@ -277,7 +285,7 @@ class GPTNeoXLayer(nn.Module):
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.attention = GPTNeoXAttention(config)
         self.mlp = GPTNeoXMLP(config)
-        self.use_deepspeed_checkpointing = config.use_deep_speed_checkpointing
+        self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 
     def forward(
         self,
@@ -291,19 +299,19 @@ class GPTNeoXLayer(nn.Module):
         residual = hidden_states
         ln_out = self.input_layernorm(hidden_states)
         # Use the DeepSpeed checkpointing function instead of calling the module directly
-        # if self.use_deepspeed_checkpointing:
-        attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
+        if self.use_deepspeed_checkpointing:
+            attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
                                                                      head_mask,
                                                                      layer_past, use_cache, output_attentions)
-        # else:
-        #     attention_layer_outputs = self.attention(
-        #         ln_out,
-        #         attention_mask=attention_mask,
-        #         layer_past=layer_past,
-        #         head_mask=head_mask,
-        #         use_cache=use_cache,
-        #         output_attentions=output_attentions,
-        #     )
+        else:
+            attention_layer_outputs = self.attention(
+                ln_out,
+                attention_mask=attention_mask,
+                layer_past=layer_past,
+                head_mask=head_mask,
+                use_cache=use_cache,
+                output_attentions=output_attentions,
+            )
 
         attn_output = attention_layer_outputs[0]  # output_attn: a, present, (attentions)
         outputs = attention_layer_outputs[1:]
@@ -640,7 +648,7 @@ class GPTNeoXForCausalLM(GPTNeoXPreTrainedModel):
             attention_mask = input_ids.new_ones(input_shape)
 
         # cut decoder_input_ids if past is used
-        if past is not None:
+        if past and past[0] is not None:
             input_ids = input_ids[:, -1:]
 
         return {"input_ids": input_ids, "attention_mask": attention_mask, "past_key_values": past}
