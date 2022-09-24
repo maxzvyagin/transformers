@@ -33,6 +33,9 @@ from .configuration_gpt_neox import GPTNeoXConfig
 
 import deepspeed
 import opt_einsum as oe
+from deepspeed.ops.sparse_attention import SparseSelfAttention
+from deepspeed.ops.sparse_attention import SparsityConfig
+
 
 logger = logging.get_logger(__name__)
 
@@ -289,6 +292,8 @@ class GPTNeoXLayer(nn.Module):
         self.input_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.attention = GPTNeoXAttention(config)
+        # self.attention = SparseSelfAttention(SparsityConfig(num_heads=config.num_attention_heads),
+        #                                     max_seq_length=config.max_position_embeddings)
         self.mlp = GPTNeoXMLP(config)
         self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 
