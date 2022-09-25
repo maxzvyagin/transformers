@@ -31,6 +31,8 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import logging
 from .configuration_gpt_neox import GPTNeoXConfig
 
+from transformers.models.big_bird.modeling_big_bird import BigBirdBlockSparseAttention
+
 import deepspeed
 import opt_einsum as oe
 from deepspeed.ops.sparse_attention import SparseSelfAttention
@@ -291,7 +293,8 @@ class GPTNeoXLayer(nn.Module):
         super().__init__()
         self.input_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
-        self.attention = GPTNeoXAttention(config)
+        self.attention = BigBirdBlockSparseAttention(config)
+        #self.attention = GPTNeoXAttention(config)
         # self.attention = SparseSelfAttention(SparsityConfig(num_heads=config.num_attention_heads),
         #                                     max_seq_length=config.max_position_embeddings)
         self.mlp = GPTNeoXMLP(config)
