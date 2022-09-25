@@ -31,7 +31,7 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import logging
 from .configuration_gpt_neox import GPTNeoXConfig
 
-from transformers.models.big_bird.modeling_big_bird import BigBirdBlockSparseAttention, BigBirdSelfAttention
+from transformers.models.big_bird.modeling_bigbird_pegasus import BigBirdPegasusSelfAttention
 
 import deepspeed
 import opt_einsum as oe
@@ -293,7 +293,7 @@ class GPTNeoXLayer(nn.Module):
         super().__init__()
         self.input_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
-        self.attention = BigBirdSelfAttention(config)
+        self.attention = BigBirdPegasusSelfAttention(config)
         #self.attention = GPTNeoXAttention(config)
         # self.attention = SparseSelfAttention(SparsityConfig(num_heads=config.num_attention_heads),
         #                                     max_seq_length=config.max_position_embeddings)
@@ -313,9 +313,12 @@ class GPTNeoXLayer(nn.Module):
         ln_out = self.input_layernorm(hidden_states)
         # Use the DeepSpeed checkpointing function instead of calling the module directly
         if self.use_deepspeed_checkpointing:
+            # attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
+            #                                                          head_mask,
+            #                                                          layer_past, use_cache, output_attentions)
             attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
-                                                                     head_mask,
-                                                                     layer_past, use_cache, output_attentions)
+                                                                         head_mask, None, None, layer_past,
+                                                                         output_attentions)
         else:
             attention_layer_outputs = self.attention(
                 ln_out,
