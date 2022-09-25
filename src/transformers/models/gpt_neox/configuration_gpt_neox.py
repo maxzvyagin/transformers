@@ -105,6 +105,8 @@ class GPTNeoXConfig(PretrainedConfig):
             eos_token_id=2,
             tie_word_embeddings=False,
             use_deepspeed_checkpointing=False,
+            block_size=64,
+            num_random_blocks=3,
             **kwargs
     ):
         super().__init__(bos_token_id=bos_token_id, eos_token_id=eos_token_id, **kwargs)
@@ -124,3 +126,5 @@ class GPTNeoXConfig(PretrainedConfig):
         self.use_cache = use_cache
         self.tie_word_embeddings = tie_word_embeddings
         self.use_deepspeed_checkpointing = use_deepspeed_checkpointing
+        self.block_size = block_size
+        self.num_random_blocks = num_random_blocks
