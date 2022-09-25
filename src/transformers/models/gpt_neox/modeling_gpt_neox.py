@@ -31,7 +31,7 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import logging
 from .configuration_gpt_neox import GPTNeoXConfig
 
-from transformers.models.big_bird.modeling_bigbird_pegasus import BigBirdPegasusSelfAttention
+from transformers.models.bigbird_pegasus.modeling_bigbird_pegasus import BigBirdPegasusSelfAttention
 
 import deepspeed
 import opt_einsum as oe
