@@ -120,7 +120,7 @@ class GPTNeoXConfig(PretrainedConfig):
             lsh_attention_probs_dropout_prob=0.0,
             attention_head_size=64,
             # longformer arguments
-            attention_window=512,
+            attention_window=[512],
             **kwargs
     ):
         super().__init__(bos_token_id=bos_token_id, eos_token_id=eos_token_id, **kwargs)
