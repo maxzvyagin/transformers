@@ -142,3 +142,11 @@ class GPTNeoXConfig(PretrainedConfig):
         self.block_size = block_size
         self.num_random_blocks = num_random_blocks
         self.use_bias= use_bias
+        self.is_decoder = is_decoder
+        self.num_hashes = num_hashes
+        self.num_buckets = num_buckets
+        self.lsh_num_chunks_before = lsh_num_chunks_before
+        self.lsh_num_chunks_after = lsh_num_chunks_after
+        self.hash_seed = hash_seed
+        self.lsh_attention_probs_dropout_prob = lsh_attention_probs_dropout_prob
+        self.attention_head_size = attention_head_size
