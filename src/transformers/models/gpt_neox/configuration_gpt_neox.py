@@ -120,7 +120,7 @@ class GPTNeoXConfig(PretrainedConfig):
             lsh_attention_probs_dropout_prob=0.0,
             attention_head_size=64,
             # longformer arguments
-            attention_window = 512
+            attention_window=512,
             **kwargs
     ):
         super().__init__(bos_token_id=bos_token_id, eos_token_id=eos_token_id, **kwargs)
@@ -142,9 +142,9 @@ class GPTNeoXConfig(PretrainedConfig):
         self.use_deepspeed_checkpointing = use_deepspeed_checkpointing
         self.block_size = block_size
         self.num_random_blocks = num_random_blocks
-        self.use_bias= use_bias
+        self.use_bias = use_bias
         self.is_decoder = is_decoder
-        self.lsh_attn_chunk_length =lsh_attn_chunk_length
+        self.lsh_attn_chunk_length = lsh_attn_chunk_length
         self.num_hashes = num_hashes
         self.num_buckets = num_buckets
         self.lsh_num_chunks_before = lsh_num_chunks_before
