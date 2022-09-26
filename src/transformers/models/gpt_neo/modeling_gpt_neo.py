@@ -323,10 +323,11 @@ class GPTNeoBlock(nn.Module):
         hidden_states = self.ln_1(hidden_states)
         attn_outputs = self.attn(
             hidden_states,
-            layer_past=layer_past,
+            # layer_past=layer_past,
             attention_mask=attention_mask,
-            head_mask=head_mask,
-            use_cache=use_cache,
+            # head_mask=head_mask,
+            layer_head_mask=head_mask,
+            # use_cache=use_cache,
             output_attentions=output_attentions,
         )
         attn_output = attn_outputs[0]  # output_attn: a, present, (attentions)
