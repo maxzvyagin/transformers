@@ -327,9 +327,9 @@ class GPTNeoXLayer(nn.Module):
             attention_layer_outputs = self.attention(
                 ln_out,
                 attention_mask=attention_mask,
-                layer_past=layer_past,
-                head_mask=head_mask,
-                use_cache=use_cache,
+                # layer_past=layer_past,
+                layer_head_mask=head_mask,
+                # use_cache=use_cache,
                 output_attentions=output_attentions,
             )
 
