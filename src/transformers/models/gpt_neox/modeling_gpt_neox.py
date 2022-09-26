@@ -358,7 +358,7 @@ class GPTNeoXLayer(nn.Module):
         #                                     max_seq_length=config.max_position_embeddings)
         # self.attention = LSHSelfAttention(config)
         # self.attention = LongformerSelfAttention(config, layer_id=0)
-        self.attention = EfficientAttention(in_channels=1, key_channels=1, head_count=config.num_attention_heads, value_channels=1)
+        self.attention = EfficientAttention(in_channels=0, key_channels=0, head_count=config.num_attention_heads, value_channels=0)
         self.mlp = GPTNeoXMLP(config)
         self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 
