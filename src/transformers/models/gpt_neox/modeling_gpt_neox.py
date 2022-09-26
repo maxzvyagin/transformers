@@ -162,7 +162,7 @@ class GPTNeoXAttention(nn.Module):
 
         # Compute attention
         if self.use_deepspeed_checkpointing:
-            attn_output, attn_weights = deepspeed.checkpointing.checkpoint(self._attn, query, key, value, attention_mask, head_mask)
+            attn_output, attn_weights = deepspeed.checkpointing.checkpoint(self._attn, query, key, value, attention_mask)
         else:
             attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
 
