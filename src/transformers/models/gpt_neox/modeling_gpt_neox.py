@@ -311,7 +311,7 @@ class EfficientAttention(nn.Module):
         self.reprojection = nn.Conv2d(value_channels, in_channels, 1)
 
     def forward(self, input_):
-        n, _, h, w = input_.size()
+        n, h, w = input_.size()
         keys = self.keys(input_).reshape((n, self.key_channels, h * w))
         queries = self.queries(input_).reshape(n, self.key_channels, h * w)
         values = self.values(input_).reshape((n, self.value_channels, h * w))
