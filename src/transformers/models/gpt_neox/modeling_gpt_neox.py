@@ -424,6 +424,9 @@ class GPTNeoXModel(GPTNeoXPreTrainedModel):
         self.layers = nn.ModuleList([GPTNeoXLayer(config, n) for n in range(config.num_hidden_layers)])
         self.final_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
+        # deepspeed checkpointing
+        self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
+
         # Initialize weights and apply final processing
         self.post_init()
 
