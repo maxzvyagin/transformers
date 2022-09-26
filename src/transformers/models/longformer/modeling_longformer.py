@@ -528,7 +528,7 @@ class LongformerSelfAttention(nn.Module):
 
         self.dropout = config.attention_probs_dropout_prob
 
-        self.layer_id = layer_id
+        # self.layer_id = layer_id
         attention_window = config.attention_window[self.layer_id]
         assert (
             attention_window % 2 == 0

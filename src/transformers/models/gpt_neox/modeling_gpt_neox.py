@@ -33,6 +33,7 @@ from .configuration_gpt_neox import GPTNeoXConfig
 
 from transformers.models.bigbird_pegasus.modeling_bigbird_pegasus import BigBirdPegasusSelfAttention
 from transformers.models.reformer.modeling_reformer import LSHSelfAttention
+from transformers.models.longformer.modeling_longformer import LongformerSelfAttention
 
 import deepspeed
 import opt_einsum as oe
@@ -298,7 +299,8 @@ class GPTNeoXLayer(nn.Module):
         #self.attention = GPTNeoXAttention(config)
         # self.attention = SparseSelfAttention(SparsityConfig(num_heads=config.num_attention_heads),
         #                                     max_seq_length=config.max_position_embeddings)
-        self.attention = LSHSelfAttention(config)
+        # self.attention = LSHSelfAttention(config)
+        self.attention = LongformerSelfAttention(config, layer_id=0)
         self.mlp = GPTNeoXMLP(config)
         self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 

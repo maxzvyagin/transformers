@@ -119,7 +119,8 @@ class GPTNeoXConfig(PretrainedConfig):
             hash_seed=None,
             lsh_attention_probs_dropout_prob=0.0,
             attention_head_size=64,
-
+            # longformer arguments
+            attention_window = 512
             **kwargs
     ):
         super().__init__(bos_token_id=bos_token_id, eos_token_id=eos_token_id, **kwargs)
@@ -151,3 +152,4 @@ class GPTNeoXConfig(PretrainedConfig):
         self.hash_seed = hash_seed
         self.lsh_attention_probs_dropout_prob = lsh_attention_probs_dropout_prob
         self.attention_head_size = attention_head_size
+        self.attention_window = attention_window
