@@ -119,10 +119,10 @@ class GPTNeoXAttention(nn.Module):
         # Compute QKV
         # Attention heads [batch, seq_len, hidden_size]
         #   --> [batch, seq_len, (np * 3 * head_size)]
-        # if self.use_deepspeed_checkpointing:
-        #     qkv = deepspeed.checkpointing.checkpoint(self.query_key_value, hidden_states)
-        # else:
-        qkv = self.query_key_value(hidden_states)
+        if self.use_deepspeed_checkpointing:
+            qkv = deepspeed.checkpointing.checkpoint(self.query_key_value, hidden_states)
+        else:
+            qkv = self.query_key_value(hidden_states)
 
         # [batch, seq_len, (num_heads * 3 * head_size)]
         #   --> [batch, seq_len, num_heads, 3 * head_size]
@@ -160,17 +160,17 @@ class GPTNeoXAttention(nn.Module):
         present = None if use_cache else (key, value)
 
         # Compute attention
-        # if self.use_deepspeed_checkpointing:
-        #     attn_output, attn_weights = deepspeed.checkpointing.checkpoint(self._attn, query, key, value, attention_mask, head_mask)
-        # else:
-        attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
+        if self.use_deepspeed_checkpointing:
+            attn_output, attn_weights = deepspeed.checkpointing.checkpoint(self._attn, query, key, value, attention_mask, head_mask)
+        else:
+            attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
 
         # Reshape outputs
         attn_output = self._merge_heads(attn_output, self.num_attention_heads, self.head_size)
-        # if self.use_deepspeed_checkpointing:
-        #     attn_output = deepspeed.checkpointing.checkpoint(self.dense, attn_output)
-        # else:
-        attn_output = self.dense(attn_output)
+        if self.use_deepspeed_checkpointing:
+            attn_output = deepspeed.checkpointing.checkpoint(self.dense, attn_output)
+        else:
+            attn_output = self.dense(attn_output)
 
         outputs = (attn_output, present)
         if output_attentions:
