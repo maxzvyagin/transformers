@@ -106,8 +106,20 @@ class GPTNeoXConfig(PretrainedConfig):
             tie_word_embeddings=False,
             use_deepspeed_checkpointing=False,
             block_size=64,
+            # big bird arguments
             num_random_blocks=3,
             use_bias=True,
+            # reformer arguments
+            is_decoder=False,
+            lsh_attn_chunk_length=64,
+            num_hashes=1,
+            num_buckets=None,
+            lsh_num_chunks_before=1,
+            lsh_num_chunks_after=0,
+            hash_seed=None,
+            lsh_attention_probs_dropout_prob=0.0,
+            attention_head_size=64,
+
             **kwargs
     ):
         super().__init__(bos_token_id=bos_token_id, eos_token_id=eos_token_id, **kwargs)

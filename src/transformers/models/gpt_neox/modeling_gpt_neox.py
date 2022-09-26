@@ -32,6 +32,7 @@ from ...utils import logging
 from .configuration_gpt_neox import GPTNeoXConfig
 
 from transformers.models.bigbird_pegasus.modeling_bigbird_pegasus import BigBirdPegasusSelfAttention
+from transformers.models.reformer.modeling_reformer import LSHSelfAttention
 
 import deepspeed
 import opt_einsum as oe
@@ -294,9 +295,10 @@ class GPTNeoXLayer(nn.Module):
         self.input_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         # self.attention = BigBirdPegasusSelfAttention(config)
-        self.attention = GPTNeoXAttention(config)
+        #self.attention = GPTNeoXAttention(config)
         # self.attention = SparseSelfAttention(SparsityConfig(num_heads=config.num_attention_heads),
         #                                     max_seq_length=config.max_position_embeddings)
+        self.attention = LSHSelfAttention(config)
         self.mlp = GPTNeoXMLP(config)
         self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 
