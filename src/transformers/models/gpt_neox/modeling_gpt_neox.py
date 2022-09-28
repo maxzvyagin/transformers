@@ -112,10 +112,10 @@ class GPTNeoXAttention(nn.Module):
         # Compute QKV
         # Attention heads [batch, seq_len, hidden_size]
         #   --> [batch, seq_len, (np * 3 * head_size)]
-        # if self.use_deepspeed_checkpointing:
-        #     qkv = deepspeed.checkpointing.checkpoint(self.query_key_value, hidden_states)
-        # else:
-        qkv = self.query_key_value(hidden_states)
+        if self.use_deepspeed_checkpointing:
+            qkv = deepspeed.checkpointing.checkpoint(self.query_key_value, hidden_states)
+        else:
+            qkv = self.query_key_value(hidden_states)
 
         # [batch, seq_len, (num_heads * 3 * head_size)]
         #   --> [batch, seq_len, num_heads, 3 * head_size]
@@ -157,10 +157,10 @@ class GPTNeoXAttention(nn.Module):
 
         # Reshape outputs
         attn_output = self._merge_heads(attn_output, self.num_attention_heads, self.head_size)
-        # if self.use_deepspeed_checkpointing:
-        #     attn_output = deepspeed.checkpointing.checkpoint(self.dense, attn_output)
-        # else:
-        attn_output = self.dense(attn_output)
+        if self.use_deepspeed_checkpointing:
+            attn_output = deepspeed.checkpointing.checkpoint(self.dense, attn_output)
+        else:
+            attn_output = self.dense(attn_output)
 
         outputs = (attn_output, present)
         if output_attentions:
@@ -203,12 +203,12 @@ class GPTNeoXAttention(nn.Module):
 
         query = query.view(batch_size * num_attention_heads, query_length, attn_head_size)
         key = key.view(batch_size * num_attention_heads, key_length, attn_head_size)
-        #attn_scores = torch.einsum("bik,bjk->bij", query, key) / self.norm_factor
-        #attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length)
-        attn_scores = opt_einsum_torch.einsum("bik,bjk->bij", query, key,
-                                              cuda_device=torch.cuda.current_device()) / self.norm_factor
-        # attn_scores = oe.contract("bik,bjk->bij", query, key, backend="torch") / self.norm_factor
-        attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length).cuda()
+        attn_scores = torch.einsum("bik,bjk->bij", query, key) / self.norm_factor
+        attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length)
+        # attn_scores = opt_einsum_torch.einsum("bik,bjk->bij", query, key,
+        #                                       cuda_device=torch.cuda.current_device()) / self.norm_factor
+        # # attn_scores = oe.contract("bik,bjk->bij", query, key, backend="torch") / self.norm_factor
+        # attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length).cuda()
 
         attn_scores = torch.where(causal_mask, attn_scores, self.masked_bias.to(attn_scores.dtype))
 
@@ -304,19 +304,19 @@ class GPTNeoXLayer(nn.Module):
         residual = hidden_states
         ln_out = self.input_layernorm(hidden_states)
         # Use the DeepSpeed checkpointing function instead of calling the module directly
-        if self.use_deepspeed_checkpointing:
-            attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
-                                                                     head_mask,
-                                                                     layer_past, use_cache, output_attentions)
-        else:
-            attention_layer_outputs = self.attention(
-                ln_out,
-                attention_mask=attention_mask,
-                layer_past=layer_past,
-                head_mask=head_mask,
-                use_cache=use_cache,
-                output_attentions=output_attentions,
-            )
+        # # if self.use_deepspeed_checkpointing:
+        #     attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
+        #                                                              head_mask,
+        #                                                              layer_past, use_cache, output_attentions)
+        # else:
+        attention_layer_outputs = self.attention(
+            ln_out,
+            attention_mask=attention_mask,
+            layer_past=layer_past,
+            head_mask=head_mask,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+        )
 
         attn_output = attention_layer_outputs[0]  # output_attn: a, present, (attentions)
         outputs = attention_layer_outputs[1:]
