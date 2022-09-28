@@ -203,12 +203,12 @@ class GPTNeoXAttention(nn.Module):
 
         query = query.view(batch_size * num_attention_heads, query_length, attn_head_size)
         key = key.view(batch_size * num_attention_heads, key_length, attn_head_size)
-        attn_scores = torch.einsum("bik,bjk->bij", query, key) / self.norm_factor
-        attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length)
-        # attn_scores = opt_einsum_torch.einsum("bik,bjk->bij", query, key,
-        #                                       cuda_device=torch.cuda.current_device()) / self.norm_factor
+        # attn_scores = torch.einsum("bik,bjk->bij", query, key) / self.norm_factor
+        # attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length)
+        attn_scores = opt_einsum_torch.einsum("bik,bjk->bij", query, key,
+                                              cuda_device=torch.cuda.current_device()) / self.norm_factor
         # # attn_scores = oe.contract("bik,bjk->bij", query, key, backend="torch") / self.norm_factor
-        # attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length).cuda()
+        attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length).cuda()
 
         attn_scores = torch.where(causal_mask, attn_scores, self.masked_bias.to(attn_scores.dtype))
 
