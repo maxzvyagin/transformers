@@ -105,22 +105,6 @@ class GPTNeoXConfig(PretrainedConfig):
             eos_token_id=2,
             tie_word_embeddings=False,
             use_deepspeed_checkpointing=False,
-            block_size=64,
-            # big bird arguments
-            num_random_blocks=3,
-            use_bias=True,
-            # reformer arguments
-            is_decoder=False,
-            lsh_attn_chunk_length=64,
-            num_hashes=1,
-            num_buckets=None,
-            lsh_num_chunks_before=1,
-            lsh_num_chunks_after=0,
-            hash_seed=None,
-            lsh_attention_probs_dropout_prob=0.0,
-            attention_head_size=64,
-            # longformer arguments
-            attention_window=[512],
             **kwargs
     ):
         super().__init__(bos_token_id=bos_token_id, eos_token_id=eos_token_id, **kwargs)
@@ -140,16 +124,3 @@ class GPTNeoXConfig(PretrainedConfig):
         self.use_cache = use_cache
         self.tie_word_embeddings = tie_word_embeddings
         self.use_deepspeed_checkpointing = use_deepspeed_checkpointing
-        self.block_size = block_size
-        self.num_random_blocks = num_random_blocks
-        self.use_bias = use_bias
-        self.is_decoder = is_decoder
-        self.lsh_attn_chunk_length = lsh_attn_chunk_length
-        self.num_hashes = num_hashes
-        self.num_buckets = num_buckets
-        self.lsh_num_chunks_before = lsh_num_chunks_before
-        self.lsh_num_chunks_after = lsh_num_chunks_after
-        self.hash_seed = hash_seed
-        self.lsh_attention_probs_dropout_prob = lsh_attention_probs_dropout_prob
-        self.attention_head_size = attention_head_size
-        self.attention_window = attention_window
