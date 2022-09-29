@@ -32,7 +32,9 @@ from ...utils import logging
 from .configuration_gpt_neox import GPTNeoXConfig
 
 import deepspeed
-import opt_einsum_torch
+import opt_einsum as oe
+from deepspeed.ops.sparse_attention import SparseSelfAttention
+from deepspeed.ops.sparse_attention import SparsityConfig
 
 logger = logging.get_logger(__name__)
 
@@ -153,6 +155,9 @@ class GPTNeoXAttention(nn.Module):
         present = None if use_cache else (key, value)
 
         # Compute attention
+        # if self.use_deepspeed_checkpointing:
+        #     attn_output, attn_weights = deepspeed.checkpointing.checkpoint(self._attn, query, key, value, attention_mask, head_mask)
+        # else:
         attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
 
         # Reshape outputs
@@ -203,12 +208,9 @@ class GPTNeoXAttention(nn.Module):
 
         query = query.view(batch_size * num_attention_heads, query_length, attn_head_size)
         key = key.view(batch_size * num_attention_heads, key_length, attn_head_size)
-        # attn_scores = torch.einsum("bik,bjk->bij", query, key) / self.norm_factor
-        # attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length)
-        attn_scores = opt_einsum_torch.einsum("bik,bjk->bij", query, key,
-                                              cuda_device=torch.cuda.current_device()) / self.norm_factor
-        # # attn_scores = oe.contract("bik,bjk->bij", query, key, backend="torch") / self.norm_factor
-        attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length).cuda()
+        attn_scores = torch.einsum("bik,bjk->bij", query, key) / self.norm_factor
+        # attn_scores = oe.contract("bik,bjk->bij", query, key, backend="torch") / self.norm_factor
+        attn_scores = attn_scores.view(batch_size, num_attention_heads, query_length, key_length)
 
         attn_scores = torch.where(causal_mask, attn_scores, self.masked_bias.to(attn_scores.dtype))
 
@@ -289,6 +291,8 @@ class GPTNeoXLayer(nn.Module):
         self.input_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.attention = GPTNeoXAttention(config)
+        # self.attention = SparseSelfAttention(SparsityConfig(num_heads=config.num_attention_heads),
+        #                                     max_seq_length=config.max_position_embeddings)
         self.mlp = GPTNeoXMLP(config)
         self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 
