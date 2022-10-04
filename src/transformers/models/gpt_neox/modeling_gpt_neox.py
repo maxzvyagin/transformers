@@ -32,9 +32,6 @@ from ...utils import logging
 from .configuration_gpt_neox import GPTNeoXConfig
 
 import deepspeed
-import opt_einsum as oe
-from deepspeed.ops.sparse_attention import SparseSelfAttention
-from deepspeed.ops.sparse_attention import SparsityConfig
 
 
 logger = logging.get_logger(__name__)
