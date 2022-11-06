@@ -111,10 +111,10 @@ class GPTNeoXAttention(nn.Module):
         # Compute QKV
         # Attention heads [batch, seq_len, hidden_size]
         #   --> [batch, seq_len, (np * 3 * head_size)]
-        if self.use_deepspeed_checkpointing:
-            qkv = deepspeed.checkpointing.checkpoint(self.query_key_value, hidden_states)
-        else:
-            qkv = self.query_key_value(hidden_states)
+        # if self.use_deepspeed_checkpointing:
+        #     qkv = deepspeed.checkpointing.checkpoint(self.query_key_value, hidden_states)
+        # else:
+        qkv = self.query_key_value(hidden_states)
 
         # [batch, seq_len, (num_heads * 3 * head_size)]
         #   --> [batch, seq_len, num_heads, 3 * head_size]
@@ -159,10 +159,10 @@ class GPTNeoXAttention(nn.Module):
 
         # Reshape outputs
         attn_output = self._merge_heads(attn_output, self.num_attention_heads, self.head_size)
-        if self.use_deepspeed_checkpointing:
-            attn_output = deepspeed.checkpointing.checkpoint(self.dense, attn_output)
-        else:
-            attn_output = self.dense(attn_output)
+        # if self.use_deepspeed_checkpointing:
+        #     attn_output = deepspeed.checkpointing.checkpoint(self.dense, attn_output)
+        # else:
+        attn_output = self.dense(attn_output)
 
         outputs = (attn_output, present)
         if output_attentions:
@@ -393,6 +393,11 @@ GPT_NEOX_INPUTS_DOCSTRING = r"""
             Whether or not to return a [`~file_utils.ModelOutput`] instead of a plain tuple.
 """
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
 
 @add_start_docstrings(
     "The bare GPTNeoX Model transformer outputting raw hidden-states without any specific head on top.",
@@ -405,6 +410,18 @@ class GPTNeoXModel(GPTNeoXPreTrainedModel):
 
         self.embed_in = nn.Embedding(config.vocab_size, config.hidden_size)
         self.layers = nn.ModuleList([GPTNeoXLayer(config) for _ in range(config.num_hidden_layers)])
+
+        if config.use_deepspeed_checkpointing:
+            layer_chunks = list(chunks(self.layers, 100))
+            wrapped_chunks = []
+            for chunk in layer_chunks:
+                chunk = nn.ModuleList(chunk)
+                chunk = deepspeed.checkpointing.checkpoint(chunk)
+                wrapped_chunks.append(chunk)
+
+            self.layers = nn.ModuleList(wrapped_chunks)
+
+
         self.final_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
         # Initialize weights and apply final processing
