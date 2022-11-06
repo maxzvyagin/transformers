@@ -323,6 +323,7 @@ class GPTNeoXLayer(nn.Module):
 
             # for deepspeed sparse attention
             attention_layer_outputs = self.attention(
+                value=ln_out,
                 query=ln_out,
                 key=ln_out,
                 attn_mask=attention_mask,
