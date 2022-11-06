@@ -98,13 +98,13 @@ class GPTNeoXAttention(nn.Module):
         self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 
     def forward(
-        self,
-        hidden_states,
-        attention_mask,
-        head_mask=None,
-        layer_past=None,
-        use_cache=False,
-        output_attentions=False,
+            self,
+            hidden_states,
+            attention_mask,
+            head_mask=None,
+            layer_past=None,
+            use_cache=False,
+            output_attentions=False,
     ):
         has_layer_past = layer_past is not None
 
@@ -123,14 +123,14 @@ class GPTNeoXAttention(nn.Module):
 
         # [batch, seq_len, num_attention_heads, 3 * head_size] --> 3 [batch, num_attention_heads, seq_len, head_size]
         query = qkv[..., : self.head_size].permute(0, 2, 1, 3)
-        key = qkv[..., self.head_size : 2 * self.head_size].permute(0, 2, 1, 3)
-        value = qkv[..., 2 * self.head_size :].permute(0, 2, 1, 3)
+        key = qkv[..., self.head_size: 2 * self.head_size].permute(0, 2, 1, 3)
+        value = qkv[..., 2 * self.head_size:].permute(0, 2, 1, 3)
 
         # Compute rotary embeddings on rotary_ndims
         query_rot = query[..., : self.rotary_ndims]
-        query_pass = query[..., self.rotary_ndims :]
+        query_pass = query[..., self.rotary_ndims:]
         key_rot = key[..., : self.rotary_ndims]
-        key_pass = key[..., self.rotary_ndims :]
+        key_pass = key[..., self.rotary_ndims:]
 
         # Compute token offset for rotary embeddings (when decoding)
         seq_len = key.shape[-2]
@@ -201,7 +201,7 @@ class GPTNeoXAttention(nn.Module):
         batch_size, num_attention_heads, query_length, attn_head_size = query.size()
         key_length = key.size(-2)
 
-        causal_mask = self.bias[:, :, key_length - query_length : key_length, :key_length].bool()
+        causal_mask = self.bias[:, :, key_length - query_length: key_length, :key_length].bool()
 
         query = query.view(batch_size * num_attention_heads, query_length, attn_head_size)
         key = key.view(batch_size * num_attention_heads, key_length, attn_head_size)
@@ -256,13 +256,13 @@ class RotaryEmbedding(torch.nn.Module):
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
-    x2 = x[..., x.shape[-1] // 2 :]
+    x2 = x[..., x.shape[-1] // 2:]
     return torch.cat((-x2, x1), dim=-1)
 
 
 def apply_rotary_pos_emb(q, k, cos, sin, offset: int = 0):
-    cos = cos[..., offset : q.shape[-2] + offset, :]
-    sin = sin[..., offset : q.shape[-2] + offset, :]
+    cos = cos[..., offset: q.shape[-2] + offset, :]
+    sin = sin[..., offset: q.shape[-2] + offset, :]
     q_embed = (q * cos) + (rotate_half(q) * sin)
     k_embed = (k * cos) + (rotate_half(k) * sin)
     return q_embed, k_embed
@@ -294,30 +294,30 @@ class GPTNeoXLayer(nn.Module):
         self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 
     def forward(
-        self,
-        hidden_states,
-        attention_mask=None,
-        head_mask=None,
-        use_cache=False,
-        layer_past=None,
-        output_attentions=False,
+            self,
+            hidden_states,
+            attention_mask=None,
+            head_mask=None,
+            use_cache=False,
+            layer_past=None,
+            output_attentions=False,
     ):
         residual = hidden_states
         ln_out = self.input_layernorm(hidden_states)
         # Use the DeepSpeed checkpointing function instead of calling the module directly
-        # # if self.use_deepspeed_checkpointing:
-        #     attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
-        #                                                              head_mask,
-        #                                                              layer_past, use_cache, output_attentions)
-        # else:
-        attention_layer_outputs = self.attention(
-            ln_out,
-            attention_mask=attention_mask,
-            layer_past=layer_past,
-            head_mask=head_mask,
-            use_cache=use_cache,
-            output_attentions=output_attentions,
-        )
+        if self.use_deepspeed_checkpointing:
+            attention_layer_outputs = deepspeed.checkpointing.checkpoint(self.attention, ln_out, attention_mask,
+                                                                         head_mask,
+                                                                         layer_past, use_cache, output_attentions)
+        else:
+            attention_layer_outputs = self.attention(
+                ln_out,
+                attention_mask=attention_mask,
+                layer_past=layer_past,
+                head_mask=head_mask,
+                use_cache=use_cache,
+                output_attentions=output_attentions,
+            )
 
         attn_output = attention_layer_outputs[0]  # output_attn: a, present, (attentions)
         outputs = attention_layer_outputs[1:]
@@ -393,6 +393,7 @@ GPT_NEOX_INPUTS_DOCSTRING = r"""
             Whether or not to return a [`~file_utils.ModelOutput`] instead of a plain tuple.
 """
 
+
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
@@ -411,16 +412,15 @@ class GPTNeoXModel(GPTNeoXPreTrainedModel):
         self.embed_in = nn.Embedding(config.vocab_size, config.hidden_size)
         self.layers = nn.ModuleList([GPTNeoXLayer(config) for _ in range(config.num_hidden_layers)])
 
-        if config.use_deepspeed_checkpointing:
-            layer_chunks = list(chunks(self.layers, 100))
-            wrapped_chunks = []
-            for chunk in layer_chunks:
-                chunk = nn.ModuleList(chunk)
-                chunk = deepspeed.checkpointing.checkpoint(chunk)
-                wrapped_chunks.append(chunk)
-
-            self.layers = nn.ModuleList(wrapped_chunks)
-
+        # if config.use_deepspeed_checkpointing:
+        #     layer_chunks = list(chunks(self.layers, 100))
+        #     wrapped_chunks = []
+        #     for chunk in layer_chunks:
+        #         chunk = nn.ModuleList(chunk)
+        #         chunk = deepspeed.checkpointing.checkpoint(chunk)
+        #         wrapped_chunks.append(chunk)
+        #
+        #     self.layers = nn.ModuleList(wrapped_chunks)
 
         self.final_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
@@ -441,16 +441,16 @@ class GPTNeoXModel(GPTNeoXPreTrainedModel):
         config_class=_CONFIG_FOR_DOC,
     )
     def forward(
-        self,
-        input_ids=None,
-        attention_mask=None,
-        head_mask=None,
-        inputs_embeds=None,
-        past_key_values=None,
-        use_cache=None,
-        output_attentions=None,
-        output_hidden_states=None,
-        return_dict=None,
+            self,
+            input_ids=None,
+            attention_mask=None,
+            head_mask=None,
+            inputs_embeds=None,
+            past_key_values=None,
+            use_cache=None,
+            output_attentions=None,
+            output_hidden_states=None,
+            return_dict=None,
     ):
         r"""
         past_key_values (`tuple(tuple(torch.FloatTensor))` of length `config.n_layers` with each tuple having 4 tensors of shape `(batch_size, num_heads, sequence_length - 1, embed_size_per_head)`):
@@ -554,7 +554,6 @@ class GPTNeoXModel(GPTNeoXPreTrainedModel):
     """GPTNeoX Model with a `language modeling` head on top for CLM fine-tuning.""", GPT_NEOX_START_DOCSTRING
 )
 class GPTNeoXForCausalLM(GPTNeoXPreTrainedModel):
-
     _keys_to_ignore_on_load_missing = [r"position_ids", r"predictions.decoder.bias"]
 
     def __init__(self, config):
@@ -575,17 +574,17 @@ class GPTNeoXForCausalLM(GPTNeoXPreTrainedModel):
     @add_start_docstrings_to_model_forward(GPT_NEOX_INPUTS_DOCSTRING.format("batch_size, sequence_length"))
     @replace_return_docstrings(output_type=CausalLMOutputWithPast, config_class=_CONFIG_FOR_DOC)
     def forward(
-        self,
-        input_ids=None,
-        attention_mask=None,
-        inputs_embeds=None,
-        head_mask=None,
-        past_key_values=None,
-        labels=None,
-        use_cache=None,
-        output_attentions=None,
-        output_hidden_states=None,
-        return_dict=None,
+            self,
+            input_ids=None,
+            attention_mask=None,
+            inputs_embeds=None,
+            head_mask=None,
+            past_key_values=None,
+            labels=None,
+            use_cache=None,
+            output_attentions=None,
+            output_hidden_states=None,
+            return_dict=None,
     ):
         r"""
         past_key_values (`tuple(tuple(torch.FloatTensor))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
