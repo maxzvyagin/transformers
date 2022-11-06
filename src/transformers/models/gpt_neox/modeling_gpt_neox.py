@@ -312,13 +312,24 @@ class GPTNeoXLayer(nn.Module):
                                                                          head_mask,
                                                                          layer_past, use_cache, output_attentions)
         else:
+            # attention_layer_outputs = self.attention(
+            #     ln_out,
+            #     attention_mask=attention_mask,
+            #     layer_past=layer_past,
+            #     head_mask=head_mask,
+            #     use_cache=use_cache,
+            #     output_attentions=output_attentions,
+            # )
+
+            # for deepspeed sparse attention
             attention_layer_outputs = self.attention(
-                ln_out,
-                attention_mask=attention_mask,
-                layer_past=layer_past,
-                head_mask=head_mask,
-                use_cache=use_cache,
-                output_attentions=output_attentions,
+                query=ln_out,
+                key=ln_out,
+                attn_mask=attention_mask,
+                # layer_past=layer_past,
+                # head_mask=head_mask,
+                # use_cache=use_cache,
+                # output_attentions=output_attentions,
             )
 
         attn_output = attention_layer_outputs[0]  # output_attn: a, present, (attentions)
