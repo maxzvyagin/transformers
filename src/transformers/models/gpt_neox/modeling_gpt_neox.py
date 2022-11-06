@@ -99,6 +99,9 @@ class GPTNeoXAttention(nn.Module):
 
         self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 
+        self.sparse_attention = SparseSelfAttention(FixedSparsityConfig(num_heads=config.num_attention_heads),
+                                             max_seq_length=config.max_position_embeddings)
+
     def forward(
             self,
             hidden_states,
@@ -157,10 +160,13 @@ class GPTNeoXAttention(nn.Module):
         # if self.use_deepspeed_checkpointing:
         #     attn_output, attn_weights = deepspeed.checkpointing.checkpoint(self._attn, query, key, value, attention_mask, head_mask)
         # else:
-        attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
+        # attn_output, attn_weights = self._attn(query, key, value, attention_mask, head_mask)
+
+        ## deepspeed attention
+        attn_output = self.sparse_attention(query=query, key=key, value=value, attn_mask=attention_mask)
 
         # Reshape outputs
-        attn_output = self._merge_heads(attn_output, self.num_attention_heads, self.head_size)
+        attn_output, attn_weights = self._merge_heads(attn_output, self.num_attention_heads, self.head_size)
         # if self.use_deepspeed_checkpointing:
         #     attn_output = deepspeed.checkpointing.checkpoint(self.dense, attn_output)
         # else:
@@ -289,9 +295,7 @@ class GPTNeoXLayer(nn.Module):
         super().__init__()
         self.input_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
-        # self.attention = GPTNeoXAttention(config)
-        self.attention = SparseSelfAttention(FixedSparsityConfig(num_heads=config.num_attention_heads),
-                                            max_seq_length=config.max_position_embeddings)
+        self.attention = GPTNeoXAttention(config)
         self.mlp = GPTNeoXMLP(config)
         self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
 
