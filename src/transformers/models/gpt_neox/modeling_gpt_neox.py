@@ -94,7 +94,7 @@ class GPTNeoXAttention(nn.Module):
         self.register_buffer("masked_bias", torch.tensor(-1e9))
         self.rotary_emb = RotaryEmbedding(self.rotary_ndims, base=config.rotary_emb_base)
         self.norm_factor = torch.sqrt(torch.tensor(self.head_size, dtype=torch.float32)).to(torch.get_default_dtype())
-        self.query_key_value = nn.Linear(config.hidden_size, 3 * config.hidden_size)
+        self.query_key_value = nn.Linear(config.hidden_size, 16 * config.hidden_size)
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
 
         self.use_deepspeed_checkpointing = config.use_deepspeed_checkpointing
