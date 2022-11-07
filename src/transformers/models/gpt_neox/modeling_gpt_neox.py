@@ -127,9 +127,13 @@ class GPTNeoXAttention(nn.Module):
         qkv = qkv.view(*new_qkv_shape)
 
         # [batch, seq_len, num_attention_heads, 3 * head_size] --> 3 [batch, num_attention_heads, seq_len, head_size]
-        query = qkv[..., : self.head_size].permute(0, 2, 1, 3)
-        key = qkv[..., self.head_size: 2 * self.head_size].permute(0, 2, 1, 3)
-        value = qkv[..., 2 * self.head_size:].permute(0, 2, 1, 3)
+        # query = qkv[..., : self.head_size].permute(0, 2, 1, 3)
+        # key = qkv[..., self.head_size: 2 * self.head_size].permute(0, 2, 1, 3)
+        # value = qkv[..., 2 * self.head_size:].permute(0, 2, 1, 3)
+
+        query = qkv[..., : self.head_size]
+        key = qkv[..., self.head_size: 2 * self.head_size]
+        value = qkv[..., 2 * self.head_size:]
 
         # # Compute rotary embeddings on rotary_ndims
         # query_rot = query[..., : self.rotary_ndims]
