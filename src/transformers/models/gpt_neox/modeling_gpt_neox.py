@@ -31,7 +31,11 @@ from ...modeling_utils import PreTrainedModel
 from ...utils import logging
 from .configuration_gpt_neox import GPTNeoXConfig
 
-import deepspeed
+try:
+    import deepspeed
+except ImportError:
+    print("WARNING: Deepspeed import failed")
+    pass
 # import opt_einsum as oe
 # from deepspeed.ops.sparse_attention import SparseSelfAttention
 # from deepspeed.ops.sparse_attention import SparsityConfig
