@@ -34,7 +34,6 @@ from .configuration_gpt_neox import GPTNeoXConfig
 try:
     import deepspeed
 except ImportError:
-    print("WARNING: Deepspeed import failed")
     pass
 # import opt_einsum as oe
 # from deepspeed.ops.sparse_attention import SparseSelfAttention
